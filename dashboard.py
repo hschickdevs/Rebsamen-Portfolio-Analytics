@@ -221,7 +221,7 @@ def main() -> None:
     st.sidebar.download_button(label="Download Current Data", data=uploaded_data.name, file_name=uploaded_data.name, mime=mimetypes.guess_type(uploaded_data.name)[0])
     
     st.sidebar.header("Valuation Assumptions:")
-    st.sidebar("*Work in progress...*")
+    st.sidebar.write("*Work in progress...*")
         
     # raw_df = pd.read_csv(uploaded_data)
     # with st.expander("Raw Data"):
