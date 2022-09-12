@@ -3,7 +3,6 @@ from pathlib import Path
 import mimetypes
 import time
 from math import floor
-from tkinter.tix import INCREASING
 from typing import Union
 
 from src.finnhub_client import FinnhubClient
