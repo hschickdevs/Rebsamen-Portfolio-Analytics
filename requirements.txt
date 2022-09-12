@@ -1,3 +1,6 @@
 plotly
 streamlit
 streamlit-aggrid
+xlrd
+finnhub-python
+ratelimit
