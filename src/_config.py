@@ -1,1 +1,1 @@
-FINNHUB_RATE_LIMIT = 300, 60
+FINNHUB_RATE_LIMIT = 300, 60  # 300 calls per 60 seconds, should reflect the rate limit of the Finnhub API tier
