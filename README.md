@@ -3,6 +3,8 @@
 3. Implement models into user interface
 
 # Option 1: Web dashboard that shows the following:
+https://hschickdevs-rebsamen-portfolio-analytics-dashboard-qio5q1.streamlitapp.com/
+
 * Can use this: https://github.com/gerardrbentley/fidelity-account-overview
 * Buy or sell recommendations can be produced for each stock based on predetermined models
 * Positions should be able to be marked as hold, sell, or buy

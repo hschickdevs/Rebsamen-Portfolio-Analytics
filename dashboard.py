@@ -14,6 +14,7 @@ from st_aggrid.shared import JsCode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 finnhub_client = FinnhubClient(FINNHUB_APIKEY)
 
@@ -120,7 +121,8 @@ def clean_rebsamen_data(df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
         updated_header = df.iloc[1] #grab the second row for the header
         df = df[2:]
         df.columns = updated_header
-    elif sheet_name.lower() == "valuation over time":
+        df = df.drop(df[df['Quantity'] == 0].index)
+    elif sheet_name.lower() in ["valuation over time", "VOT"]:
         updated_header = df.iloc[0] #grab the second row for the header
         df = df[1:]
         df.columns = updated_header
@@ -171,10 +173,17 @@ def main() -> None:
     uploaded_data = st.sidebar.file_uploader(
         "Upload the Rebsamen holdings file", type=[".csv", ".xls", ".xlsx", ".xlsm"], accept_multiple_files=False
     )
+    
+    # File upload setup
+    if uploaded_data is None:
+        st.sidebar.info("Using sample data. Upload a file above to use your own data!")
+        uploaded_data = open(Path('src/assets/example.xls'), "rb")
+    else:
+        st.sidebar.success("Uploaded your file!")
 
     
     # REBSAMEN DATA FOR TESTING:
-    rebsamen_positions_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Positions")
+    rebsamen_positions_data = pd.read_excel(uploaded_data, sheet_name="Positions")
     holdings_date = rebsamen_positions_data.columns[0].split(' ')[-1]
     rebsamen_positions_data = clean_rebsamen_data(rebsamen_positions_data, "Positions")
     
@@ -185,7 +194,11 @@ def main() -> None:
     logos = []
     increment = 100 / len(rebsamen_positions_data)
     for i, row in rebsamen_positions_data.iterrows():
-        loading_bar.progress((increment * (i - 1)) / 100)
+        try:
+            loading_bar.progress((increment * (i - 1)) / 100)
+        except:
+            # TODO: Temp fix for invalid progress value error
+            pass
         loading_header.header(f"Processing data... {floor(increment * (i - 1))}%")
         
         # Get company descriptions
@@ -204,19 +217,15 @@ def main() -> None:
     loading_header.empty()
     ###############################################################################################################"""
     
-    rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Valuation over Time"), 
-                                                  sheet_name="Valuation over Time")
+    # TODO: Fix this
+    try:
+        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="Valuation over Time"), sheet_name="Valuation over Time")
+    except ValueError:
+        # Temporary fix for different sheet names
+        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="VOT"), sheet_name="VOT")
     
-    rebsamen_realized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Realized Gains")
-    rebsamen_unrealized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Unrealized Gains")
-    
-
-    # File upload setup
-    if uploaded_data is None:
-        st.sidebar.info("Using sample data. Upload a file above to use your own data!")
-        uploaded_data = open(Path('src/assets/example.csv'), "r")
-    else:
-        st.sidebar.success("Uploaded your file!")
+    # rebsamen_realized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Realized Gains")
+    # rebsamen_unrealized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Unrealized Gains")
         
     st.sidebar.download_button(label="Download Current Data", data=uploaded_data.name, file_name=uploaded_data.name, mime=mimetypes.guess_type(uploaded_data.name)[0])
     
@@ -313,10 +322,13 @@ def main() -> None:
     
     asset_classes = rebsamen_positions_data.groupby("Asset Classification")
     
+    ytd_return = sum(filter(lambda i: not (type(i) is str), list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]])))
+    print(ytd_return)
+    # ytd_return = sum([v for v in list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]]) if v is not str])
     st.metric(
         "Total Portfolio Value",
         f'${rebsamen_positions_data["Market Value"].sum():,.2f}',
-        f"{rebsamen_valuation_data[rebsamen_valuation_data.columns[7]].sum():,.2f} YTD",
+        f"{ytd_return:,.2f} YTD",
     )
     # for column, row in zip(st.columns(len(totals)), totals.itertuples()):
     #     column.metric(
@@ -366,7 +378,7 @@ def main() -> None:
     # Get company fundamentals, maybe use loading indicators here 
     
     ###TICKER SELECTBOX EXPERIMENTATION"""
-    ticker = st.selectbox("Select a Ticker from the Portfolio:", list(rebsamen_positions_data["Security ID"].unique()),)
+    ticker = st.selectbox("Select a Ticker from the Portfolio:", list(rebsamen_positions_data["Security ID"].sort_values(ascending=True).unique()))
     row = rebsamen_positions_data.loc[rebsamen_positions_data['Security ID'] == ticker.upper()]
     with st.spinner(f"Loading {ticker}..."):
         # print(row)
@@ -408,70 +420,6 @@ def main() -> None:
             st.write(f"Invalid symbol: {ticker}")
     ###END EXPERIMENTATION"""
     
-    
-    # loading_header2 = st.header("Loading metrics...")
-    # loading_bar2 = st.progress(0.0)
-    # increment = 100 / len(rebsamen_positions_data)
-    
-    # for i, un_zip in enumerate(zip(st.tabs(list(rebsamen_positions_data['Security ID'])), rebsamen_positions_data.iterrows())):
-    #     tab, row = un_zip
-    #     loading_bar2.progress((increment * (i)) / 100)
-    #     loading_header2.header(f"Loading metrics... {floor(increment * (i))}%")
-        
-    #     if row[1]['Logo'] is not None:    
-    #         tab.image(row[1]['Logo'], width=100)
-    #     tab.subheader(f"({row[1]['Security ID']}) {row[1]['Description']}")
-    #     # tab.write(f"**Last Price:** \${row[1]['Price']} (as of {row[1]['Price as of date']} {row[1]['Timezone']})  |  **Shares:** {row[1]['Quantity']}  |  **NAV:** ${row[1]['Market Value']:,.2f}")
-    #     tab.write(f"**Position Value:** ${row[1]['Market Value']:,.2f}")
-    #     tab.write(f"**Shares:** {row[1]['Quantity']}")
-    #     tab.write(f"**Last Price:** \${row[1]['Price']} (as of {row[1]['Price as of date']} {row[1]['Timezone']})")
-        
-    #     for sub_i, sub_tab in enumerate(tab.tabs(["🏦 Valuation", "📊 Financial Metrics", "📈 Technicals"])):
-    #         if sub_i == 0:
-    #             with sub_tab.expander("Algorithmic Stock Rating Result"):
-    #                 st.write("This is a placeholder for the algorithmic stock rating result")
-    #         elif sub_i == 1:
-    #             # r =  finnhub_client.company_basic_financials(row[1]['Security ID'], "all")
-    #             symbol, formatted_df = get_company_basic_financials(row[1]['Security ID'], holdings_date)
-    #             if formatted_df is not None:
-    #                 # formatted_r = {"metric": [k for k, v in r['metric'].items()],
-    #                 #                 "value": [str(v) for k, v in r['metric'].items()]}
-    #                 # formatted_df = pd.DataFrame(formatted_r)
-    #                 with sub_tab:
-    #                     AgGrid(formatted_df, key=f"grid-{symbol}", fit_columns_on_grid_load=True, columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW)  # fit_columns_on_grid_load=True, 
-    #                 sub_tab.download_button(
-    #                     label="Download Metrics as CSV",
-    #                     data=convert_df(formatted_df),
-    #                     file_name=f'{symbol}_financial_metrics.csv',
-    #                     mime='text/csv',
-    #                     key=f"download-{symbol}",
-    #                 )
-    #             else:
-    #                 sub_tab.write("No financials available")
-    #         elif sub_i == 2:
-    #             sub_tab.image(f"https://finviz.com/chart.ashx?t={row[1]['Security ID']}&ty=c&ta=1&p=d&s=l")
-            
-    # loading_bar2.empty()
-    # loading_header2.empty()
-
-    # st.subheader("Value of each Symbol per Account")
-    # fig = px.sunburst(
-    #     df, path=["account_name", "symbol"], values="current_value", **COMMON_ARGS
-    # )
-    # fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
-    # chart(fig)
-
-    # st.subheader("Value of each Symbol")
-    # fig = px.pie(df, values="current_value", names="symbol", **COMMON_ARGS)
-    # fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
-    # chart(fig)
-
-    # st.subheader("Total Value gained each Symbol")
-    # draw_bar("total_gain_loss_dollar")
-    # st.subheader("Total Percent Value gained each Symbol")
-    # draw_bar("total_gain_loss_percent")
-    # --------------------------------------------------------------------------------------------------------------"""
-
 
 if __name__ == "__main__":
     st.set_page_config(
