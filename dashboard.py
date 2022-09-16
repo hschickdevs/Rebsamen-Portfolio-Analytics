@@ -6,7 +6,6 @@ from math import floor
 from typing import Union
 
 from src.finnhub_client import FinnhubClient
-from src._config import FINNHUB_APIKEY
 
 import streamlit as st
 from st_aggrid import AgGrid, ColumnsAutoSizeMode
@@ -16,7 +15,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 
-finnhub_client = FinnhubClient(FINNHUB_APIKEY)
+finnhub_client = FinnhubClient(st.secrets["FINNHUB_API_KEY"])
 
 
 chart = functools.partial(st.plotly_chart, use_container_width=True)
@@ -121,7 +120,7 @@ def clean_rebsamen_data(df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
         updated_header = df.iloc[1] #grab the second row for the header
         df = df[2:]
         df.columns = updated_header
-        df = df.drop(df[df['Quantity'] == 0].index)
+        df = df.drop(df[df['Quantity'] == 0].index)  # Remove empty positions (0 qty)
     elif sheet_name.lower() in ["valuation over time", "VOT"]:
         updated_header = df.iloc[0] #grab the second row for the header
         df = df[1:]
