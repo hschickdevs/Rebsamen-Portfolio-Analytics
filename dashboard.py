@@ -196,6 +196,7 @@ def get_company_profile(ticker: str, holdings_date: str) -> dict:
 
     Args:
         ticker (str): ticker symbol
+        holdings_date (str): date of holdings from Rebsamen report (allows for correct caching)
 
     Returns:
         dict: company profile

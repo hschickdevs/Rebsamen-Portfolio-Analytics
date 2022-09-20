@@ -6,7 +6,7 @@
 
 > Note: The site is currently in the proof-of-concept phase.
 
-**https://hschickdevs-rebsamen-portfolio-analytics-dashboard-ld06xz.streamlitapp.com/**
+**https://hschickdevs-rebsamen-portfolio-analytics-dashboard-mbqr5l.streamlitapp.com/**
 
 ## Project Objective
 
