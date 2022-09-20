@@ -1,9 +1,10 @@
 import functools
 from pathlib import Path
 import mimetypes
+from typing import Optional, Union
 import time
 from math import floor
-from typing import Union
+from typing import Optional, Union
 
 from src.finnhub_client import FinnhubClient
 
@@ -138,6 +139,32 @@ def clean_rebsamen_data(df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
 @st.cache
 def convert_df(df):
     return df.to_csv().encode('utf-8')
+
+@st.experimental_memo
+def load_rebsamen_data(file: Union[str, bytes]) -> tuple[str, pd.DataFrame, pd.DataFrame]:
+    """
+    The load_rebsamen_data function loads the positions and valuation data from the Rebsamen portfolio report.
+    The function returns the holdings date, positions dataframe, and valuation dataframe.
+    This function is used to memoize the dataframes so that they are not reloaded on every page refresh.
+    
+    :param file: Allow the function to accept either a string or bytes object
+    :return: A tuple 
+        - Holdings Date (str)
+        - Rebsamen Positions Data (pd.DataFrame)
+        - Rebsamen VOT Data (pd.DataFrame)
+    """
+    rebsamen_positions_data = pd.read_excel(file, sheet_name="Positions")
+    holdings_date = rebsamen_positions_data.columns[0].split(' ')[-1]
+    rebsamen_positions_data = clean_rebsamen_data(rebsamen_positions_data, "Positions")
+    
+    # TODO: Fix this
+    try:
+        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(file, sheet_name="Valuation over Time"), sheet_name="Valuation over Time")
+    except ValueError:
+        # Temporary fix for different sheet names
+        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(file, sheet_name="VOT"), sheet_name="VOT")
+        
+    return holdings_date, rebsamen_positions_data, rebsamen_valuation_data
     
 
 @st.experimental_memo
@@ -162,6 +189,20 @@ def filter_data(
 
     return df
 
+@st.experimental_memo
+def get_company_profile(ticker: str, holdings_date: str) -> dict:
+    """
+    Get company profile from IEX Cloud API
+
+    Args:
+        ticker (str): ticker symbol
+
+    Returns:
+        dict: company profile
+    """
+    # holdings_date = holdings_date
+    return finnhub_client.get_company_profile2(ticker)
+
 
 def main() -> None:
     #---------------------------SIDEBAR (SETTINGS IN SIDE PANEL) SETUP MENU---------------------------------------"""
@@ -182,9 +223,11 @@ def main() -> None:
 
     
     # REBSAMEN DATA FOR TESTING:
-    rebsamen_positions_data = pd.read_excel(uploaded_data, sheet_name="Positions")
-    holdings_date = rebsamen_positions_data.columns[0].split(' ')[-1]
-    rebsamen_positions_data = clean_rebsamen_data(rebsamen_positions_data, "Positions")
+    # rebsamen_positions_data = pd.read_excel(uploaded_data, sheet_name="Positions")
+    # holdings_date = rebsamen_positions_data.columns[0].split(' ')[-1]
+    # rebsamen_positions_data = clean_rebsamen_data(rebsamen_positions_data, "Positions")
+    
+    holdings_date, rebsamen_positions_data, rebsamen_valuation_data = load_rebsamen_data(uploaded_data)
     
     # LOADING HEADER TO PROCESS POSITIONS DATA
     loading_header = st.header("Processing data...")
@@ -201,7 +244,7 @@ def main() -> None:
         loading_header.header(f"Processing data... {floor(increment * (i - 1))}%")
         
         # Get company descriptions
-        r = finnhub_client.get_company_profile2(row['Security ID'])
+        r = get_company_profile(row['Security ID'], holdings_date)
         if len(r) > 0:
             industries.append(r['finnhubIndustry'])
             logos.append(r['logo'])
@@ -217,11 +260,11 @@ def main() -> None:
     ###############################################################################################################"""
     
     # TODO: Fix this
-    try:
-        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="Valuation over Time"), sheet_name="Valuation over Time")
-    except ValueError:
-        # Temporary fix for different sheet names
-        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="VOT"), sheet_name="VOT")
+    # try:
+    #     rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="Valuation over Time"), sheet_name="Valuation over Time")
+    # except ValueError:
+    #     # Temporary fix for different sheet names
+    #     rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(uploaded_data, sheet_name="VOT"), sheet_name="VOT")
     
     # rebsamen_realized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Realized Gains")
     # rebsamen_unrealized_gains_data = pd.read_excel(Path("src/assets/Rebsamen Holdings 082222.xls"), sheet_name="Unrealized Gains")
@@ -394,6 +437,9 @@ def main() -> None:
                 if sub_i == 0:
                     with sub_tab.expander("Algorithmic Stock Rating"):
                         st.write("This is a placeholder for the algorithmic stock rating result")
+                    sub_tab.write("Select valuation method:")
+                    for v_tab_i, v_tab in enumerate(sub_tab.tabs(['DCF', 'Multiples Analysis'])):
+                        v_tab.write(f"This is a placeholder for the valuation tab")
                 elif sub_i == 1:
                     # r =  finnhub_client.company_basic_financials(row[1]['Security ID'], "all")
                     symbol, formatted_df = get_company_basic_financials(row['Security ID'].iat[0], holdings_date)
