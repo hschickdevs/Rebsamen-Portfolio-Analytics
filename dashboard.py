@@ -141,7 +141,7 @@ def convert_df(df):
     return df.to_csv().encode('utf-8')
 
 @st.experimental_memo
-def load_rebsamen_data(file: Union[str, bytes]) -> tuple[str, pd.DataFrame, pd.DataFrame]:
+def load_rebsamen_data(file: Union[str, bytes]) -> tuple[str, pd.DataFrame, Union[pd.DataFrame, None]]:
     """
     The load_rebsamen_data function loads the positions and valuation data from the Rebsamen portfolio report.
     The function returns the holdings date, positions dataframe, and valuation dataframe.
@@ -162,8 +162,12 @@ def load_rebsamen_data(file: Union[str, bytes]) -> tuple[str, pd.DataFrame, pd.D
         rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(file, sheet_name="Valuation over Time"), sheet_name="Valuation over Time")
     except ValueError:
         # Temporary fix for different sheet names
-        rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(file, sheet_name="VOT"), sheet_name="VOT")
-        
+        try:
+            rebsamen_valuation_data = clean_rebsamen_data(pd.read_excel(file, sheet_name="VOT"), sheet_name="VOT")
+        except ValueError:
+            # Sheet does not exist
+            rebsamen_valuation_data = None
+
     return holdings_date, rebsamen_positions_data, rebsamen_valuation_data
     
 
@@ -308,83 +312,36 @@ def main() -> None:
     #     st.write(Path("assets/placeholder.txt").read_text())
     #--------------------------------------------------------------------------------------------------------------"""
 
-
-    #---------------------------------SELECTED ACCOUNT AND TICKER DATA CHART---------------------------------------"""
-    # df = filter_data(df, account_selections, symbol_selections)
-    # st.subheader("Selected Account and Ticker Data")
-    # cellsytle_jscode = JsCode(
-    #     """
-    # function(params) {
-    #     if (params.value > 0) {
-    #         return {
-    #             'color': 'white',
-    #             'backgroundColor': 'forestgreen'
-    #         }
-    #     } else if (params.value < 0) {
-    #         return {
-    #             'color': 'white',
-    #             'backgroundColor': 'crimson'
-    #         }
-    #     } else {
-    #         return {
-    #             'color': 'white',
-    #             'backgroundColor': 'slategray'
-    #         }
-    #     }
-    # };
-    # """
-    # )
-
-    # gb = GridOptionsBuilder.from_dataframe(df)
-    # gb.configure_columns(
-    #     (
-    #         "last_price_change",
-    #         "total_gain_loss_dollar",
-    #         "total_gain_loss_percent",
-    #         "today's_gain_loss_dollar",
-    #         "today's_gain_loss_percent",
-    #     ),
-    #     cellStyle=cellsytle_jscode,
-    # )
-    # gb.configure_pagination()
-    # gb.configure_columns(("account_name", "symbol"), pinned=True)
-    # gridOptions = gb.build()
-
-    # AgGrid(df, gridOptions=gridOptions, allow_unsafe_jscode=True)
-
-    # def draw_bar(y_val: str) -> None:
-    #     fig = px.bar(df, y=y_val, x="symbol", **COMMON_ARGS)
-    #     fig.update_layout(barmode="stack", xaxis={"categoryorder": "total descending"})
-    #     chart(fig)
-    #--------------------------------------------------------------------------------------------------------------"""
-
-
     # ----------------------------------------- ACCOUNT VALUES & CHARTS -------------------------------------------"""
     # st.subheader(f'Portfolio Value')
     # totals = df.groupby("account_name", as_index=False).sum()
     
     asset_classes = rebsamen_positions_data.groupby("Asset Classification")
-    
-    ytd_return = sum(filter(lambda i: not (type(i) is str), list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]])))
-    print(ytd_return)
-    # ytd_return = sum([v for v in list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]]) if v is not str])
-    st.metric(
-        "Total Portfolio Value",
-        f'${rebsamen_positions_data["Market Value"].sum():,.2f}',
-        f"{ytd_return:,.2f} YTD",
-    )
+
+    if rebsamen_valuation_data is not None:
+        ytd_return = sum(filter(lambda i: not (type(i) is str), list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]])))
+        print(ytd_return)
+        # ytd_return = sum([v for v in list(rebsamen_valuation_data[rebsamen_valuation_data.columns[7]]) if v is not str])
+        st.metric(
+            "Total Portfolio Value",
+            f'${rebsamen_positions_data["Market Value"].sum():,.2f}',
+            f"{ytd_return:,.2f} YTD",
+        )
     # for column, row in zip(st.columns(len(totals)), totals.itertuples()):
     #     column.metric(
     #         row.account_name,
     #         f"${row.current_value:.2f}",
     #         f"{row.total_gain_loss_dollar:.2f}",
     #     )
+    total_portfolio_value = 0
     for column, group in zip(st.columns(len(asset_classes)), reversed(tuple(asset_classes))):
+        group_value = group[1]['Market Value'].sum()
         column.metric(
             group[0].title(),
-            f"${group[1]['Market Value'].sum():,.2f}",
+            f"${group_value:,.2f}",
             # f"{row.total_gain_loss_dollar:.2f}",
         )
+        total_portfolio_value += group_value
 
     # fig = px.bar(
     #     totals,
@@ -431,6 +388,7 @@ def main() -> None:
             st.subheader(f"({row['Security ID'].iat[0]}) {row['Description'].iat[0]}")
             # tab.write(f"**Last Price:** \${row[1]['Price']} (as of {row[1]['Price as of date']} {row[1]['Timezone']})  |  **Shares:** {row[1]['Quantity']}  |  **NAV:** ${row[1]['Market Value']:,.2f}")
             st.write(f"**Position Value:** ${row['Market Value'].iat[0]:,.2f}")
+            st.write(f'**Diversification:** {(float(row["Market Value"].iat[0]) / total_portfolio_value) * 100:.2f}%')
             st.write(f"**Shares:** {row['Quantity'].iat[0]}")
             st.write(f"**Last Price:** \${row['Price'].iat[0]} (as of {row['Price as of date'].iat[0]} {row['Timezone'].iat[0]})")
             
@@ -461,7 +419,7 @@ def main() -> None:
                         sub_tab.write("No financials available")
                 elif sub_i == 2:
                     sub_tab.image(f"https://finviz.com/chart.ashx?t={symbol.upper().strip()}&ty=c&ta=1&p=d&s=l")
-                    sub_tab.write("*Proof of Concept - Not a real chart*")
+                    sub_tab.write("*Real YTD Chart - Proof of Concept (Not Interactive)*")
         else:
             st.write(f"Invalid symbol: {ticker}")
     ###END EXPERIMENTATION"""
