@@ -14,25 +14,12 @@ The objective of this project is to create a web dashboard that will allow stude
 
 ## Technologies:
 
-<img height=65 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1869px-Python-logo-notext.svg.png">
-<img height=70 src="https://res.cloudinary.com/crunchbase-production/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/z3ahdkytzwi1jxlpazje">
-<img height=70 src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/2560px-Pandas_logo.svg.png">
-<img height=70 src="https://static.finnhub.io/img/finnhub_2020-05-09_20_51/logo/logo-gradient2.png">
-
-<div id="banner" style="overflow: hidden;justify-content:space-around;">
-<div class="" style="max-width: 20%;max-height: 20%;display: inline-block;">
+<p float="left">
     <img height=65 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1869px-Python-logo-notext.svg.png">
-</div>
-<div class="" style="max-width: 100%;max-height: 100%;display: inline-block;">
     <img height=70 src="https://res.cloudinary.com/crunchbase-production/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/z3ahdkytzwi1jxlpazje">
-</div>
-<div class="" style="max-width: 20%;max-height: 20%;display: inline-block;">
     <img height=70 src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/2560px-Pandas_logo.svg.png">
-</div>
-<div class="" style="max-width: 100%;max-height: 100%;display: inline-block;">
     <img height=70 src="https://static.finnhub.io/img/finnhub_2020-05-09_20_51/logo/logo-gradient2.png">
-</div>
-</div>
+</p>
 
 This project was built entirely using Python.
 * The frontend was constructed using the Streamlit Python framework.
