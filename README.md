@@ -12,13 +12,13 @@
 
 The objective of this project is to create a web dashboard that will allow students and faculty to analyze portfolio performance, holdings breakdown, algorithmic trade recommendations, and fundamental & technical stock metrics for the University of Arkansas Rebsamen Trust, managed by the undergraduate invite-only Portfolio Management I and II class at the Sam M. Walton College of Business.
 
-## Technologies:
+## Tools & Technologies:
 
 <p float="left">
-    <img height=65 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1869px-Python-logo-notext.svg.png">
-    <img height=70 src="https://res.cloudinary.com/crunchbase-production/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/z3ahdkytzwi1jxlpazje">
-    <img height=70 src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/2560px-Pandas_logo.svg.png">
-    <img height=70 src="https://static.finnhub.io/img/finnhub_2020-05-09_20_51/logo/logo-gradient2.png">
+    <a href="https://www.python.org/"><img height=65 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1869px-Python-logo-notext.svg.png"></a>
+    <a href="https://streamlit.io/"><img height=70 src="https://res.cloudinary.com/crunchbase-production/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/z3ahdkytzwi1jxlpazje"></a>
+    <a href="https://pandas.pydata.org/"><img height=70 src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Pandas_logo.svg/2560px-Pandas_logo.svg.png"></a>
+    <a href="https://finnhub.io/"><img height=70 src="https://static.finnhub.io/img/finnhub_2020-05-09_20_51/logo/logo-gradient2.png"></a>
 </p>
 
 This project was built entirely using Python.
